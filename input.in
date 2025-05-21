@@ -1,0 +1,69 @@
+
+# Setting Basic Parameters 
+variable 		t equal  400  			# Temperature   
+dimension		3
+boundary		p p p
+
+units           metal
+atom_style      atomic
+
+#----------Data Files-------------------
+
+read_data        data.data 
+
+#-------------- Potential ------------------
+pair_style      hybrid tersoff  lj/cut 12 
+
+pair_coeff 		* *  tersoff    BNC.tersoff       C  C             #Sub
+pair_coeff 		1 2  lj/cut     0.0024  3.4						   # C - C	                                   
+
+
+
+#---------- Group --------------
+group           sub     type     1
+group			C60	    type     2
+
+#------- Fix & Velocity ---------------------
+velocity C60 create $t 134658
+#fix 1 C60 nvt temp  $t $t 1.0
+#fix 2 all box/relax iso 0.0 vmax 0.001
+fix 1 C60 rigid/nvt single temp $t $t 1 reinit no
+fix freeze sub  setforce 0.0 0.0 0.0
+
+#-------- Computes ---------------
+compute  lj C60 group/group sub
+
+variable x equal xcm(C60,x)
+variable y equal xcm(C60,y)
+variable z equal xcm(C60,z)
+
+variable vx equal vcm(C60,x)
+variable vy equal vcm(C60,y)
+variable vz equal vcm(C60,z)
+
+variable wx equal omega(C60,x)
+variable wy equal omega(C60,y)
+variable wz equal omega(C60,z)
+
+variable fx equal fcm(C60,x)
+variable fy equal fcm(C60,y)
+variable fz equal fcm(C60,z)
+
+#------- Outputs -----------------
+thermo          100
+thermo_style  	custom step cpu temp c_lj v_x v_y v_z v_vx v_vy v_vz v_wx v_wy v_wz v_fx v_fy v_fz
+timestep        0.001
+dump		    1 all xyz  2000 dump.xyz 
+dump_modify		1 element  C  C
+
+#------------- Run ---------------------
+
+minimize 1.0e-4 1.0e-6 100 1000
+
+run             30000000
+
+
+
+
+
+
